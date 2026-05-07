@@ -36,15 +36,15 @@ app.put("/api/todos/:id", (req, res) => {
     return res.status(404).send({ message: "ToDo not found" });
   }
   const { name, checked } = req.body;
-  if (!name || checked !== undefined) {
+  if (name === undefined && checked === undefined) {
     return res.status(400).send({ message: "Body must have name or checked" });
   }
   const updatingTodo = {
     ...updatingItem,
-    ...(name && { name }),
+    ...(name !== undefined && { name }),
     ...(checked !== undefined && { checked }),
   };
-  todos.map((todo) => {
+  todos = todos.map((todo) => {
     if (todo.id == id) {
       return updatingTodo;
     }
