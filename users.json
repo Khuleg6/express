@@ -1,1 +1,18 @@
-[]
+[
+  { "id": "1IUACHjeaT0Lg1XSSdC8r", "username": "test", "password": "test" },
+  {
+    "id": "Ps036iJ7BQbg1-jQl_uSv",
+    "username": "khuleg",
+    "password": "$2b$10$C9P7Jdtk9pVFmMjf8IsvOuX5Yx5b8FGYba.nhO5oI7pzL1G/eiXzm"
+  },
+  {
+    "id": "LGh4hUIKK6iM7cgzv0jAd",
+    "username": "k",
+    "password": "$2b$10$l/HB/z5l.qn6Bzm5dg1Ly.FFLli.Q40LAsGQRXYuH1qH0RWCz0Bsu"
+  },
+  {
+    "id": "hL4SagufWNBEVq-ZC60SW",
+    "username": "khuleg123",
+    "password": "$2b$10$KtKAIND3J.bk7QkL1rOrGuB4LPB26lDFnXkjwqwFbvGl5RA4W8/jy"
+  }
+]
