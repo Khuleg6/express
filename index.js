@@ -32,6 +32,7 @@ app.post("/api/users/check", (req, res) => {
       .status(400)
       .send({ message: "Must have a username and password" });
   }
+
   const existingUser = users.find((user) => user.username === username);
   const isMatching = bycrypt.compareSync(password, existingUser.password);
   return res.send(isMatching);

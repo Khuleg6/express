@@ -3,7 +3,7 @@ import express from "express";
 import { nanoid } from "nanoid";
 import jwt from "jsonwebtoken";
 import { auth } from "../auth-middleware.js";
-
+import { TodoModel } from "../models/todo-models.js";
 const router = express.Router();
 
 const todoData = fs.readFileSync("./data.json", "utf-8");
@@ -15,75 +15,90 @@ const updateTodofile = () => {
   fs.writeFileSync("./data.json", JSON.stringify(todos), "utf-8");
 };
 
-router.get("/", auth, (req, res) => {
-  const userTodos = todos.filter((todo) => todo.userId === req.user.id);
-  return res.send(userTodos);
+router.get("/", auth, async (req, res) => {
+  try {
+    const userTodos = await TodoModel.find({ userID: req.user.id });
+    return res.send(userTodos);
+  } catch (error) {
+    console.log("Error details:", error);
+    return res.status(500).send({ message: "Error fetching todos" });
+  }
 });
 
-router.post("/", auth, (req, res) => {
-  const name = req.body?.name;
+router.post("/", auth, async (req, res) => {
+  const { name } = req.body;
   if (!name) {
     return res.status(400).send({ message: "Body must have name" });
   }
-  const newTodo = {
-    id: nanoid(),
-    checked: false,
-    userId: req.user.id,
-    name,
-  };
-  todos.push(newTodo);
-  updateTodofile();
-  return res.send(newTodo);
+  try {
+    const newTodo = await TodoModel.create({
+      name,
+      checked: false,
+      userId: req.user.id,
+    });
+    return res.status(201).send(newTodo);
+  } catch (error) {
+    return res.status(400).send({ message: "Error creating todo", error });
+  }
 });
 
-router.delete("/:id", (req, res) => {
-  const id = req.params.id;
-  const user = req.user;
-  const deletingItem = todos.find((todo) => todo.id == id);
-  if (!deletingItem) {
-    return res.status(404).send({ message: "ToDo not found" });
-  }
-  if (user.id !== deletingItem.userId) {
-    return res.status(403).send({ message: "Forbidden" });
-  }
+router.delete("/:id", auth, async (req, res) => {
+  const { id } = req.params;
 
-  todos = todos.filter((todo) => todo.id != id);
-  updateDatafile();
-  return res.send(deletingItem);
-});
-router.put("/:id", (req, res) => {
-  const id = req.params.id;
-  const updatingItem = todos.find((todo) => todo.id == id);
-  if (!updatingItem) {
-    return res.status(404).send({ message: "ToDo not found" });
-  }
-  const { name, checked } = req.body;
-  if (name === undefined && checked === undefined) {
-    return res.status(400).send({ message: "Body must have name or checked" });
-  }
-  const updatingTodo = {
-    ...updatingItem,
-    ...(name !== undefined && { name }),
-    ...(checked !== undefined && { checked }),
-  };
-  todos = todos.map((todo) => {
-    if (todo.id == id) {
-      return updatingTodo;
+  try {
+    // Зөвхөн өөрийнх нь мөн эсэхийг давхар шалгаж устгана
+    const deletedItem = await TodoModel.findOneAndDelete({
+      _id: id,
+      userID: req.user.id,
+    });
+
+    if (!deletedItem) {
+      return res
+        .status(404)
+        .send({ message: "ToDo not found or unauthorized" });
     }
-    return todo;
-  });
-  updateDatafile();
-  return res.send(updatingTodo);
+
+    return res.send(deletedItem);
+  } catch (error) {
+    return res.status(500).send({ message: "Error deleting todo" });
+  }
+});
+router.put("/:id", auth, async (req, res) => {
+  const { id } = req.params;
+  const { name, checked } = req.body;
+
+  try {
+    const updatedTodo = await TodoModel.findOneAndUpdate(
+      { _id: id, userID: req.user.id }, // Шүүлтүүр
+      { name, checked }, // Шинэ утгууд
+      { new: true, runValidators: true }, // Шинэчлэгдсэн датаг буцаах
+    );
+
+    if (!updatedTodo) {
+      return res
+        .status(404)
+        .send({ message: "ToDo not found or unauthorized" });
+    }
+
+    return res.send(updatedTodo);
+  } catch (error) {
+    return res.status(400).send({ message: "Error updating todo" });
+  }
 });
 
-router.get("/:id", (req, res) => {
-  const id = req.params.id;
-  const Item = todos.find((todo) => todo.id == id);
-  if (!Item) {
-    return res.status(404).send({ message: "ToDo not found" });
+router.get("/:id", auth, async (req, res) => {
+  try {
+    const item = await TodoModel.findOne({
+      _id: req.params.id,
+      userID: req.user.id,
+    });
+    if (!item) {
+      return res.status(404).send({ message: "ToDo not found" });
+    }
+    return res.send(item);
+  } catch (error) {
+    return res.status(500).send({ message: "Server error" });
   }
-
-  return res.send(Item);
 });
 
 export default router;
